@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    
+    scrape_configs:
+      # Scrape Vector metrics
+      - job_name: 'vector'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - hammerspace
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+
+      #####Hammerspace Metrics############################
+      # Add your Hammerspace cluster
+      
+      - job_name: 'hammerspace_cluster'
+        static_configs:
+        - targets:
+          - '10.200.120.200:9101'
+          - '10.200.120.200:9102'
+          - '10.200.120.200:9103'
+          labels:
+            cluster: 'boston.onaside.quest'
+            instance: 'boston.onaside.quest'
+            node_type: 'clusterip'
+
+      # Add Anvil nodes
+      - job_name: 'hammerspace_anvil_nodes'
+        static_configs:
+        - targets: ['10.200.120.201:9100']
+          labels:
+            cluster: 'hscluster.ourcompany.com'
+            instance: 'kbk-boston-anvil-1.onaside.quest'
+            node_type: 'anvil'
+    
+
+      # Add DSX nodes
+      - job_name: 'hammerspace_dsx_nodes'
+        static_configs:
+        - targets: 
+          - '10.200.120.201:9100'
+          - '10.200.120.201:9105'
+          labels:
+            cluster: 'boston.onaside.quest'
+            instance: 'kbk-boston-dsx-1.onaside.quest'
+            node_type: 'dsx'
+ 

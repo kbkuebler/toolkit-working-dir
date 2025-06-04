@@ -16,6 +16,15 @@ datasources:
         url: http://loki.hammerspace.svc.cluster.local:3100
         access: proxy
         isDefault: true
+        
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus.hammerspace.svc.cluster.local:9090
+        access: proxy
+        isDefault: false
+        editable: true
+        jsonData:
+          timeInterval: "15s"
 
 adminUser: admin
 adminPassword: admin123

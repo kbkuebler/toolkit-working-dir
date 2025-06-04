@@ -1,0 +1,14 @@
+data_dir: /vector-data-dir
+
+# API for health checks
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+# Simple console output for testing
+sinks:
+  console:
+    type: console
+    inputs: []
+    encoding:
+      codec: json

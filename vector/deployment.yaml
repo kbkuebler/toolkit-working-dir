@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: vector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8686"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: vector
@@ -21,6 +25,9 @@ spec:
           ports:
             - name: api
               containerPort: 8686
+            - name: metrics
+              containerPort: 8686
+              protocol: TCP
             - name: syslog-tcp
               containerPort: 5140
               protocol: TCP

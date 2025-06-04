@@ -24,3 +24,7 @@ spec:
       port: 8686
       targetPort: 8686
       protocol: TCP
+    - name: metrics
+      port: 8686
+      targetPort: 8686
+      protocol: TCP
