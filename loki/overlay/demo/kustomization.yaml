@@ -1,0 +1,5 @@
+resources:
+  - ../../base
+  - pvc.yaml
+
+namespace: hammerspace

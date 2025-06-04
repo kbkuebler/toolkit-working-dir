@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: hammerspace
+data:
+  vector.yaml: |
+    data_dir: /vector-data-dir
+
+    api:
+      enabled: true
+      address: 0.0.0.0:8686
+
+    sources:
+      syslog:
+        type: syslog
+        address: 0.0.0.0:5140
+        mode: tcp_udp
+        max_length: 102400
+
+    transforms:
+      parse_message:
+        type: remap
+        inputs: ["syslog"]
+        source: |
+          .raw_message = .message
+          .app = (exists(.appname) && !is_null(.appname)) ? string!(.appname) : "unknown"
+          .source_host = (exists(.hostname) && !is_null(.hostname)) ? string!(.hostname) : "unknown"
+          .timestamp = now()
+
+    sinks:
+      loki:
+        type: loki
+        inputs: ["parse_message"]
+        endpoint: http://loki.hammerspace.svc.cluster.local:3100
+        encoding:
+          codec: json
+        labels:
+          job: "vector"
+          app: "{{ app }}"
+          source_host: "{{ source_host }}"
+        request:
+          timeout_secs: 30
+          retry_attempts: 3
