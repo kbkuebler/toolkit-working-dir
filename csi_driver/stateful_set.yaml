@@ -1,0 +1,111 @@
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-provisioner
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: csi-provisioner
+  serviceName: "csi-provisioner"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: csi-provisioner
+    spec:
+      serviceAccountName: csi-provisioner
+      hostNetwork: true
+      containers:
+        - name: csi-provisioner
+          imagePullPolicy: Always
+          image: registry.k8s.io/sig-storage/csi-provisioner:v3.6.0
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+            - "--timeout=60s" # Recommended as shares may take some time to create
+            - "--v=5"
+          env:
+            - name: CSI_ENDPOINT
+              value: /var/lib/csi/hs-csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/
+        - name: csi-attacher
+          imagePullPolicy: Always
+          image: registry.k8s.io/sig-storage/csi-attacher:v4.4.0
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+            - "--v=5"
+          env:
+            - name: CSI_ENDPOINT
+              value: /var/lib/csi/hs-csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/
+        - name: csi-snapshotter
+          imagePullPolicy: Always
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v8.1.0
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+            - "--v=5"
+          env:
+            - name: CSI_ENDPOINT
+              value: /var/lib/csi/hs-csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/
+        - name: csi-resizer
+          imagePullPolicy: Always
+          image: registry.k8s.io/sig-storage/csi-resizer:v1.10.1
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+            - "--v=5"
+          env:
+            - name: CSI_ENDPOINT
+              value: /var/lib/csi/hs-csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/
+        - name: hs-csi-plugin-controller
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          imagePullPolicy: Always
+          image: hammerspaceinc/csi-plugin:v1.2.6
+          env:
+            - name: CSI_ENDPOINT
+              value: /var/lib/csi/hs-csi.sock
+            - name: HS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: com.hammerspace.csi.credentials
+                  key: username
+            - name: HS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: com.hammerspace.csi.credentials
+                  key: password
+            - name: HS_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: com.hammerspace.csi.credentials
+                  key: endpoint
+            - name: HS_TLS_VERIFY
+              value: "false"
+            - name: CSI_MAJOR_VERSION
+              value: "1"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/
+            - name: staging-dir
+              mountPath: /tmp
+              mountPropagation: Bidirectional
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+        - name: staging-dir
+          hostPath:
+            path: /tmp

@@ -1,0 +1,24 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-node
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources:
+      [
+        "pods",
+        "secrets",
+        "nodes",
+        "namespaces",
+        "events",
+        "persistentvolumes",
+        "persistentvolumeclaims",
+        "persistentvolumeclaims/status",
+      ]
+    verbs: ["get", "list", "create", "watch", "update", "patch"]
+
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments", "volumeattachments/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
