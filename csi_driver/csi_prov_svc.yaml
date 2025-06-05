@@ -1,0 +1,14 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-provisioner
+  namespace: kube-system
+  labels:
+    app: csi-provisioner
+spec:
+  selector:
+    app: csi-provisioner
+  ports:
+    - name: dummy
+      port: 12345

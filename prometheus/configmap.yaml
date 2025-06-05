@@ -57,7 +57,7 @@ data:
         static_configs:
         - targets: ['10.200.120.201:9100']
           labels:
-            cluster: 'hscluster.ourcompany.com'
+            cluster: 'boston.onaside.quest'
             instance: 'kbk-boston-anvil-1.onaside.quest'
             node_type: 'anvil'
     
