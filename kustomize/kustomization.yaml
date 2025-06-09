@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# This is the root kustomization file that will include all clusters
+# To deploy for a specific cluster, use:
+# kubectl apply -k kustomize/overlays/cluster1
+
+# List all components (base and overlays)
+components:
+  - base/
+  - overlays/cluster1/
+  # Add more cluster overlays as needed
+
+# Common configurations across all clusters
+commonLabels:
+  app.kubernetes.io/part-of: monitoring-stack
+  app.kubernetes.io/managed-by: kustomize
+
+# Default namespace for resources that don't specify one
+namespace: monitoring
+
+# Add any global resources here
+resources: []
+
+# Global variables can be defined here
+configMapGenerator: []
+
+# Global patches can be applied here
+patches: []

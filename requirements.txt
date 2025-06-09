@@ -4,3 +4,5 @@ kubernetes>=28.1.0
 python-dotenv>=1.0.0
 paramiko>=3.4.0
 python-dateutil>=2.8.2
+PyYAML>=6.0.1
+typing-extensions>=4.5.0

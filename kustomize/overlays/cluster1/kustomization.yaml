@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Import the base configuration
+resources:
+- ../../base
+
+# Set the namespace for this cluster
+namespace: monitoring-cluster1
+
+# Cluster-specific configurations
+commonLabels:
+  cluster: cluster1
+  environment: production  # Can be overridden per-cluster
+
+# Cluster-specific patches
+patches:
+  # Patch Prometheus configuration for this cluster
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/args/1
+        value: --storage.tsdb.retention.time=7d
+    target:
+      kind: Deployment
+      name: prometheus
+      labelSelector: app=prometheus
+
+  # Add cluster-specific annotations
+  - patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          cluster: cluster1
+          region: us-west-2  # Example region
+    target:
+      kind: Namespace
+      name: monitoring-cluster1

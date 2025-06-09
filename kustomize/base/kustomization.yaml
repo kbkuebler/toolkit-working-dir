@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Include all the components
+components:
+  - ../../prometheus
+  # Add other components (loki, vector, etc.) here
+
+# Common configurations for all clusters
+commonLabels:
+  app.kubernetes.io/part-of: monitoring-stack
+  app.kubernetes.io/managed-by: kustomize
+
+# Default namespace
+namespace: monitoring
+
+# Resources that are common to all clusters
+resources: []
+
+# Common ConfigMaps
+configMapGenerator: []
+
+# Common patches
+patches: []

@@ -127,26 +127,27 @@ def create_card_content(service_name, status):
             # Last update time
             ui.label(f"Last checked: {status['last_update']}").classes('text-xs text-gray-500')
 
+# Dictionary to store card references
+service_cards = {}
+
 def create_card(service_name, status):
-    """Create a card for a service."""
+    """Create a card for a service and store the reference."""
     card = ui.card().classes('w-96' if service_name == 'csi-nfs-node' else 'w-80')
-    card.service_name = service_name  # Store service name for updates
     with card:
         create_card_content(service_name, status)
+    service_cards[service_name] = card
     return card
 
 def update_all_cards():
     """Update all service cards with current status."""
     for service_name in SERVICES:
         status = get_service_status(service_name)
-        # Find and update the card
-        for card in ui.card:
-            if hasattr(card, 'service_name') and card.service_name == service_name:
-                # Clear and recreate the card with new status
-                card.clear()
-                with card:
-                    create_card_content(service_name, status)
-                break
+        # Update the card if it exists
+        if service_name in service_cards:
+            card = service_cards[service_name]
+            card.clear()
+            with card:
+                create_card_content(service_name, status)
 
 def create_dashboard():
     """Create the dashboard UI."""
@@ -155,9 +156,10 @@ def create_dashboard():
     # Create a header with a more visible refresh button
     with ui.header().classes('justify-between items-center bg-blue-600 text-white p-4'):
         ui.label('Hammerspace Showcase').classes('text-xl font-bold')
-        ui.button('Refresh', on_click=update_all_cards, icon='refresh')\
+        refresh_btn = ui.button('Refresh', icon='refresh')\
             .classes('bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded')\
             .props('flat')
+        refresh_btn.on('click', update_all_cards)
     
     # Create the main content area
     with ui.column().classes('w-full p-4'):

@@ -1,1 +1,4 @@
 dashboard/venv/
+**/venv
+**/venv/*
+**/venv/**

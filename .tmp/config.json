@@ -1,0 +1,42 @@
+{
+  "clusters": {
+    "boston": {
+      "cluster_ip": "10.200.120.200",
+      "nodes": [
+        {
+          "type": "anvil",
+          "ip": "10.200.120.201",
+          "name": "kbk-boston-anvil-1"
+        },
+        {
+          "type": "dsx",
+          "ip": "10.200.120.202",
+          "name": "kbk-boston-dsx-1"
+        }
+      ]
+    }
+  },
+  "global": {
+    "namespace": "monitoring",
+    "prometheus": {
+      "scrape_interval": "15s",
+      "evaluation_interval": "15s",
+      "retention": "7d",
+      "storage_size": "10Gi",
+      "ports": {
+        "metrics": 9100,
+        "api": 9101,
+        "node_exporter": 9100,
+        "c_metrics": 9102,
+        "c_advisor": 9103
+      }
+    }
+  },
+  "auth": {
+    "username": "admin"
+  },
+  "dashboard": {
+    "port": 8080,
+    "theme": "dark"
+  }
+}

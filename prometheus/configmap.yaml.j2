@@ -38,9 +38,8 @@ data:
           action: replace
           target_label: pod_name
 
-      {# Loop through each cluster #}
       {% for cluster_name, cluster in clusters.items() %}
-      {# Cluster IP targets #}
+      # Cluster IP targets
       - job_name: '{{ cluster_name }}_cluster_ips'
         static_configs:
           - targets:
@@ -53,19 +52,19 @@ data:
               instance: '{{ cluster_name }}_cluster_ip'
               node_type: 'cluster_ip'
       
-      {# Process each node in the cluster #}
       {% for node in cluster.nodes %}
+      # {{ node.type|title }} node: {{ node.name }}
       - job_name: '{{ cluster_name }}_{{ node.type }}_nodes'
         static_configs:
-          - targets:
-              - '{{ node.ip }}:{{ global.prometheus.ports.node_exporter | default('9100') }}'  # Node Exporter
-              {%- if node.type == 'dsx' %}
-              - '{{ node.ip }}:{{ global.prometheus.ports.c_metrics | default('9102') }}'  # DSX specific
+          - targets: [
+              '{{ node.ip }}:{{ global.prometheus.ports.node_exporter | default('9100') }}'  # Node Exporter
+              {%- if node.type == 'dsx' %},
+              '{{ node.ip }}:{{ global.prometheus.ports.c_metrics | default('9102') }}'  # DSX specific
               {%- endif %}
+            ]
             labels:
               cluster: '{{ cluster_name }}'
               instance: '{{ node.name }}'
               node_type: '{{ node.type }}'
       {% endfor %}
       {% endfor %}
- 
