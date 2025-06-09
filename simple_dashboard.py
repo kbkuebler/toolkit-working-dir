@@ -1,8 +1,16 @@
+import os
+import socket
+from datetime import datetime
+from typing import Dict, Any
+
+import nicegui
 from nicegui import ui
 from kubernetes import client, config
 from kubernetes.client import CoreV1Api, AppsV1Api
-from datetime import datetime
-import nicegui.ui as ui
+
+# Get server address for access links (default to localhost for development)
+# Set SERVER_ADDRESS environment variable to the lab server's IP/hostname when running in the lab
+SERVER_ADDRESS = os.environ.get('SERVER_ADDRESS', 'localhost')
 
 # Configure Kubernetes client
 config.load_kube_config()
@@ -103,41 +111,14 @@ def create_card_content(service_name, status):
             if is_csi:
                 ui.label(f"Nodes: {status['available_replicas']}/{status['replicas']}")
                 
-                # Show pod details if available
-                if 'pods' in status and status['pods']:
-                    with ui.expansion('View Pods', icon='info').classes('w-full'):
-                        for pod in status['pods']:
-                            with ui.card().classes('w-full bg-gray-50 p-2 my-1'):
-                                with ui.row().classes('w-full items-center'):
-                                    ui.icon('pod')
-                                    ui.label(pod['name']).classes('font-mono text-sm')
-                                    ui.label(f"({pod['status']})").classes('text-xs ml-2')
-                                
-                                # Show node name
-                                if pod['node']:
-                                    with ui.row().classes('items-center ml-4'):
-                                        ui.icon('computer').classes('text-sm')
-                                        ui.label(pod['node']).classes('text-xs')
-                                
-                                # Show container statuses if available
-                                if pod.get('containers'):
-                                    for container in pod['containers']:
-                                        status_icon = 'check_circle' if container['ready'] else 'error'
-                                        status_color = 'text-green-500' if container['ready'] else 'text-red-500'
-                                        with ui.row().classes('items-center ml-4'):
-                                            ui.icon(status_icon).classes(f'{status_color} text-sm')
-                                            ui.label(container['name']).classes('text-xs')
-                                            if container['restart_count'] > 0:
-                                                ui.label(f"(restarts: {container['restart_count']})").classes('text-xs text-orange-500 ml-1')
-            else:
-                # Regular service info
-                ui.label(f"Replicas: {status['available_replicas']}/{status['replicas']}")
-                
-                # Show port and access link if available
-                if status['port']:
-                    with ui.row().classes('items-center'):
-                        ui.label("Access:")
-                        ui.link("Open", f"http://127.0.0.1:{status['port']}")
+            # Show port and access link if available
+            if status['port']:
+                with ui.row().classes('items-center'):
+                    ui.label("Access:")
+                    ui.link("Open", f"http://{SERVER_ADDRESS}:{status['port']}")
+                    ui.link(" (Copy URL)", f"http://{SERVER_ADDRESS}:{status['port']}", 
+                           new_tab=False).on("click", lambda e, url=f"http://{SERVER_ADDRESS}:{status['port']}": 
+                                           ui.run_javascript(f'navigator.clipboard.writeText("{url}")'))
             
             # Show any errors
             if 'error' in status:
@@ -169,11 +150,11 @@ def update_all_cards():
 
 def create_dashboard():
     """Create the dashboard UI."""
-    ui.page_title("Hammerspace Monitoring")
+    ui.page_title("Hammerspace Showcase")
     
     # Create a header with a more visible refresh button
     with ui.header().classes('justify-between items-center bg-blue-600 text-white p-4'):
-        ui.label('Hammerspace Monitoring').classes('text-xl font-bold')
+        ui.label('Hammerspace Showcase').classes('text-xl font-bold')
         ui.button('Refresh', on_click=update_all_cards, icon='refresh')\
             .classes('bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded')\
             .props('flat')
@@ -189,4 +170,4 @@ def create_dashboard():
 # Create and run the dashboard
 if __name__ in {"__main__", "__mp_main__"}:
     create_dashboard()
-    ui.run(port=9000, reload=True)
+    ui.run(port=8080, reload=True,host='0.0.0.0')

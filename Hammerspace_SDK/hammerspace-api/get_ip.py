@@ -8,36 +8,40 @@ client = HammerspaceApiClient(
     verify_ssl=False
 )
 
-# Get all network interfaces
-interfaces = client.network_interfaces.get()
-
-print("Hammerspace Nodes:")
-print("=" * 80)
-
-# Track nodes we've already seen
-seen_nodes = set()
-
-for interface in interfaces:
-    node = interface.get('node', {})
-    node_name = node.get('name', 'Unknown')
+def get_management_ips():
+    """
+    Returns a dictionary of node names to their management IP addresses
+    for ANVIL and DSX nodes
+    """
+    interfaces = client.network_interfaces.get()
+    node_ips = {}
     
-    # Skip if we've already processed this node
-    if node_name in seen_nodes:
-        continue
+    for interface in interfaces:
+        node = interface.get('node', {})
+        node_name = node.get('name')
+        node_type = node.get('productNodeType')
         
-    node_type = node.get('productNodeType', 'UNKNOWN')
+        # Only process ANVIL and DSX nodes we haven't seen yet
+        if node_type in ['ANVIL', 'DSX'] and node_name and node_name not in node_ips:
+            ip_address = node.get('mgmtIpAddress', {}).get('address')
+            if ip_address:
+                node_ips[node_name] = ip_address
     
-    # Only process ANVIL and DSX nodes
-    if node_type in ['ANVIL', 'DSX']:
-        seen_nodes.add(node_name)
-        ip_address = node.get('mgmtIpAddress', {}).get('address', 'N/A')
-        
-        print(f"\nNode Name: {node_name}")
-        print(f"Type: {node_type}")
-        print(f"IP Address: {ip_address}")
-        print(f"Hardware State: {node.get('hwComponentState', 'N/A')}")
-        print(f"Node State: {node.get('nodeState', 'N/A')}")
-        print("-" * 40)
+    return node_ips
 
-print("\n" + "=" * 80)
-print(f"Found {len(seen_nodes)} nodes (ANVIL/DSX)")
+# Get all management IPs
+node_ips = get_management_ips()
+
+# Print in Prometheus static_configs format
+print("# Prometheus static_configs for Hammerspace nodes")
+print("scrape_configs:")
+print("  - job_name: 'hammerspace'")
+print("    static_configs:")
+print("      - targets: [" + ", ".join(f"'{ip}:9100'" for ip in node_ips.values()) + "]")
+
+# Print detailed information
+print("\n# Node Details:")
+for node_name, ip in node_ips.items():
+    print(f"{node_name}: {ip}")
+
+print(f"\nFound {len(node_ips)} nodes (ANVIL/DSX)")
