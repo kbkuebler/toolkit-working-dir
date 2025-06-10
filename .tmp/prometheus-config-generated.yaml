@@ -38,35 +38,29 @@ data:
           action: replace
           target_label: pod_name
 
-      # Cluster IP targets
-      - job_name: 'boston_cluster_ips'
+      # Cluster IP targets for 
+      - job_name: 'cluster_1_cluster_ips'
         static_configs:
           - targets:
-              - '10.200.120.200:9101'  # API
-              - '10.200.120.200:9102'  # C-Metrics
-              - '10.200.120.200:9103'  # cAdvisor
-              - '10.200.120.200:9100'  # Node Exporter
+              - ':9101'  # API
+              - ':9102'  # C-Metrics
+              - ':9103'  # cAdvisor
+              - ':9100'  # Node Exporter
             labels:
-              cluster: 'boston'
-              instance: 'boston_cluster_ip'
+              cluster: 'cluster_1'
+              instance: '_cluster_ip'
               node_type: 'cluster_ip'
       
-      # Anvil node: kbk-boston-anvil-1
-      - job_name: 'boston_anvil_nodes'
+      # Cluster IP targets for 
+      - job_name: 'cluster_2_cluster_ips'
         static_configs:
-          - targets: [
-              '10.200.120.201:9100'  # Node Exporter            ]
+          - targets:
+              - ':9101'  # API
+              - ':9102'  # C-Metrics
+              - ':9103'  # cAdvisor
+              - ':9100'  # Node Exporter
             labels:
-              cluster: 'boston'
-              instance: 'kbk-boston-anvil-1'
-              node_type: 'anvil'
-      # Dsx node: kbk-boston-dsx-1
-      - job_name: 'boston_dsx_nodes'
-        static_configs:
-          - targets: [
-              '10.200.120.202:9100'  # Node Exporter,
-              '10.200.120.202:9102'  # DSX specific            ]
-            labels:
-              cluster: 'boston'
-              instance: 'kbk-boston-dsx-1'
-              node_type: 'dsx'
+              cluster: 'cluster_2'
+              instance: '_cluster_ip'
+              node_type: 'cluster_ip'
+      

@@ -1,25 +1,37 @@
+# Hammerspace API Configuration
+hammerspace:
+  # Credentials can be set here or via HS_USERNAME/HS_PASSWORD environment variables
+  username: ""  # Will use HS_USERNAME if empty
+  password: ""  # Will use HS_PASSWORD if empty
+  api_url: ""   # Will use HS_API_URL if empty
+  ssl_verify: true
+  timeout: 30    # API timeout in seconds
+
 # Cluster configurations
 clusters:
-  boston:
-    cluster_ip: 10.200.120.200
-    nodes:
-      - type: anvil
-        ip: 10.200.120.201
-        name: kbk-boston-anvil-1
-      - type: dsx
-        ip: 10.200.120.202
-        name: kbk-boston-dsx-1
-  
-  # Example second cluster (uncomment to use)
-  # london:
-  #   cluster_ip: 10.200.120.210
-  #   nodes:
-  #     - type: anvil
-  #       ip: 10.200.120.211
-  #       name: kbk-london-anvil-1
-  #     - type: dsx
-  #       ip: 10.200.120.212
-  #       name: kbk-london-dsx-1
+  - name: boston
+    ip: 10.200.120.200
+    description: "Boston Production Cluster"
+    labels:
+      region: us-east
+      environment: production
+    ports:
+      metrics: 9100
+      api: 9101
+      c_metrics: 9102
+      c_advisor: 9103
+
+  - name: new-jersey
+    ip: 10.200.120.202
+    description: "New Jersey DR Cluster"
+    labels:
+      region: us-east
+      environment: dr
+    ports:
+      metrics: 9100
+      api: 9101
+      c_metrics: 9102
+      c_advisor: 9103
 
 # Global settings
 global:
@@ -31,21 +43,8 @@ global:
     evaluation_interval: 15s
     retention: 7d
     storage_size: 10Gi
-    
-    # Port configuration
-    ports:
-      metrics: 9100
-      api: 9101
-      node_exporter: 9100
-      c_metrics: 9102
-      c_advisor: 9103
-
-# Optional: Authentication credentials
-auth:
-  username: admin
-  # password: ${HS_PASSWORD}  # Will be read from environment variable
 
 # Dashboard configuration
 dashboard:
-  port: 8080
+  port: 3000  # Grafana default port
   theme: dark

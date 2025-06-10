@@ -7,15 +7,64 @@ data:
     global:
       scrape_interval: {{ global.prometheus.scrape_interval | default('15s') }}
       evaluation_interval: {{ global.prometheus.evaluation_interval | default('15s') }}
+      scrape_timeout: 10s
     
+    # Alerting configuration
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets: []
+    
+    # Rule files
+    rule_files:
+      - /etc/prometheus/rules/*.rules
+    
+    # Scrape configurations
     scrape_configs:
+      # Scrape Prometheus itself
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+    
+      # Scrape kubelet metrics
+      - job_name: 'kubelet'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+    
+      # Scrape kube-state-metrics
+      - job_name: 'kube-state-metrics'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['{{ global.namespace | default("monitoring") }}']
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: keep
+          regex: kube-state-metrics
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: '8080|8081'
+    
       # Scrape Vector metrics
       - job_name: 'vector'
         kubernetes_sd_configs:
         - role: pod
           namespaces:
-            names:
-              - {{ global.namespace | default('monitoring') }}
+            names: ['{{ global.namespace | default("monitoring") }}']
         relabel_configs:
         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
           action: keep
@@ -38,33 +87,22 @@ data:
           action: replace
           target_label: pod_name
 
-      {% for cluster_name, cluster in clusters.items() %}
-      # Cluster IP targets
-      - job_name: '{{ cluster_name }}_cluster_ips'
+      # Scrape cluster nodes
+      {% for cluster in clusters %}
+      - job_name: '{{ cluster.name | replace("-", "_") }}_nodes'
+        metrics_path: '/metrics'
         static_configs:
-          - targets:
-              - '{{ cluster.cluster_ip }}:{{ global.prometheus.ports.api | default('9101') }}'  # API
-              - '{{ cluster.cluster_ip }}:{{ global.prometheus.ports.c_metrics | default('9102') }}'  # C-Metrics
-              - '{{ cluster.cluster_ip }}:{{ global.prometheus.ports.c_advisor | default('9103') }}'  # cAdvisor
-              - '{{ cluster.cluster_ip }}:{{ global.prometheus.ports.node_exporter | default('9100') }}'  # Node Exporter
-            labels:
-              cluster: '{{ cluster_name }}'
-              instance: '{{ cluster_name }}_cluster_ip'
-              node_type: 'cluster_ip'
-      
-      {% for node in cluster.nodes %}
-      # {{ node.type|title }} node: {{ node.name }}
-      - job_name: '{{ cluster_name }}_{{ node.type }}_nodes'
-        static_configs:
-          - targets: [
-              '{{ node.ip }}:{{ global.prometheus.ports.node_exporter | default('9100') }}'  # Node Exporter
-              {%- if node.type == 'dsx' %},
-              '{{ node.ip }}:{{ global.prometheus.ports.c_metrics | default('9102') }}'  # DSX specific
-              {%- endif %}
-            ]
-            labels:
-              cluster: '{{ cluster_name }}'
-              instance: '{{ node.name }}'
-              node_type: '{{ node.type }}'
-      {% endfor %}
+        - targets:
+            - '{{ cluster.ip }}:{{ cluster.ports.metrics | default(9100) }}'  # node_exporter
+            - '{{ cluster.ip }}:{{ cluster.ports.api | default(9101) }}'      # API
+            - '{{ cluster.ip }}:{{ cluster.ports.c_metrics | default(9102) }}' # C-Metrics
+            - '{{ cluster.ip }}:{{ cluster.ports.c_advisor | default(9103) }}' # cAdvisor
+          labels:
+            cluster: '{{ cluster.name | default(loop.index) }}'
+            instance: '{{ cluster.ip }}'
+            {% if cluster.labels is defined %}
+            {% for key, value in cluster.labels.items() %}
+            {{ key }}: '{{ value }}'
+            {% endfor %}
+            {% endif %}
       {% endfor %}

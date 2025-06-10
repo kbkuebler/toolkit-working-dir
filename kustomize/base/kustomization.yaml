@@ -1,24 +1,48 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Include all the components
-components:
-  - ../../prometheus
-  # Add other components (loki, vector, etc.) here
+# Include all monitoring components
+resources:
+  - namespace.yaml
+  - configs/
+  - prometheus/
+  - loki/
+  - vector/
+  - grafana/
 
 # Common configurations for all clusters
 commonLabels:
   app.kubernetes.io/part-of: monitoring-stack
   app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "1.0"
 
 # Default namespace
 namespace: monitoring
 
-# Resources that are common to all clusters
-resources: []
+# Common environment variables
+configMapGenerator:
+  - name: monitoring-config
+    behavior: merge
+    literals:
+      - NAMESPACE=monitoring
+      - CLUSTER_NAME=default
 
-# Common ConfigMaps
-configMapGenerator: []
+# Common annotations
+commonAnnotations:
+  kustomize.toolkit.fluxcd.io/checksum: ""
 
-# Common patches
-patches: []
+# Configure resource limits and requests
+patches:
+  - target:
+      kind: Deployment
+      name: "*"
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi

@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - service-account.yaml
+  - service.yaml
+  - service-monitor.yaml
+  - deployment.yaml
+  - configmap.yaml
+
+# Common labels for all Prometheus resources
+commonLabels:
+  app.kubernetes.io/component: prometheus
+  app.kubernetes.io/name: prometheus
+
+# Name prefix for resources
+namePrefix: prometheus-
+
+# Name suffix for resources
+nameSuffix: ""
+
+# Namespace for resources
+namespace: monitoring
+
+# ConfigMap generator for Prometheus configuration
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=prometheus-config.yaml
+
+# Secret generator for basic auth (if needed)
+secretGenerator:
+  - name: prometheus-basic-auth
+    type: Opaque
+    literals:
+      - username=admin
+      - password=prom-password
+
+# Patches for Prometheus deployment
+patches:
+  - path: patches/resource-limits.yaml
+    target:
+      kind: Deployment
+      name: prometheus
+  - path: patches/node-selector.yaml
+    target:
+      kind: Deployment
+      name: prometheus

@@ -1,6 +1,7 @@
-import json
+import os
 import sys
-from jinja2 import Environment, FileSystemLoader
+import json
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 def main():
     if len(sys.argv) != 4:
@@ -17,7 +18,8 @@ def main():
     
     # Set up Jinja2 environment
     env = Environment(
-        loader=FileSystemLoader('.'),
+        loader=FileSystemLoader(os.path.dirname(template_file) or '.'),
+        autoescape=select_autoescape(),
         trim_blocks=True,
         lstrip_blocks=True
     )
@@ -29,12 +31,12 @@ def main():
     }
     
     # Render template with the full context
-    template = env.get_template(template_file)
+    template = env.get_template(os.path.basename(template_file))
     output = template.render(**context)
     
     # Write output
     with open(output_file, 'w') as f:
         f.write(output)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
