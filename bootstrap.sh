@@ -205,6 +205,19 @@ install_yq() {
         return 0
     fi
 
+    # If /usr/local/bin isn't writable, attempt user-local install
+    local dest_dir="$HOME/.local/bin"
+    mkdir -p "$dest_dir"
+    if curl -sL "$url" -o "$dest_dir/yq" \
+        && chmod +x "$dest_dir/yq"; then
+        log_info "Installed yq ${version} to $dest_dir/yq"
+        export PATH="$dest_dir:$PATH"
+        if ! echo "$PATH" | tr ':' '\n' | grep -qx "$dest_dir"; then
+            log_warn "$dest_dir is not in your PATH. Add it to your shell profile: export PATH=\"$dest_dir:\$PATH\""
+        fi
+        return 0
+    fi
+
     log_warn "Failed to install yq"
     return 1
 }
