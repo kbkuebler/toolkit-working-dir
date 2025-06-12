@@ -5,8 +5,8 @@ kind: Kustomization
 # To deploy for a specific cluster, use:
 # kubectl apply -k kustomize/overlays/cluster1
 
-# List all components (base and overlays)
-components:
+# List all component directories
+resources:
   - base/
   - overlays/cluster1/
   # Add more cluster overlays as needed
@@ -19,8 +19,7 @@ commonLabels:
 # Default namespace for resources that don't specify one
 namespace: monitoring
 
-# Add any global resources here
-resources: []
+# Additional resources can be added here if needed
 
 # Global variables can be defined here
 configMapGenerator: []
