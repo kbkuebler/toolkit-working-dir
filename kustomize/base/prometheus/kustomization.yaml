@@ -26,7 +26,7 @@ namespace: monitoring
 configMapGenerator:
   - name: prometheus-config
     files:
-      - prometheus.yml=prometheus-config.yaml
+      - prometheus.yml=configmap.yaml
 
 # Secret generator for basic auth (if needed)
 secretGenerator:
