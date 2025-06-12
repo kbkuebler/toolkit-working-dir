@@ -222,6 +222,50 @@ install_yq() {
     return 1
 }
 
+# Install kubectl using package manager or official release
+install_kubectl() {
+    if command_exists kubectl; then
+        return 0
+    fi
+
+    # Try to install via package manager first
+    if install_dependency kubectl kubectl; then
+        return 0
+    fi
+
+    # Fallback to official Kubernetes release
+    local version="v1.29.4"
+    local os=$(uname | tr '[:upper:]' '[:lower:]')
+    local arch=$(uname -m)
+    case "$arch" in
+        x86_64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+    esac
+
+    local url="https://dl.k8s.io/release/${version}/bin/${os}/${arch}/kubectl"
+
+    if curl -sL "$url" -o /usr/local/bin/kubectl \
+        && chmod +x /usr/local/bin/kubectl; then
+        log_info "Installed kubectl ${version} from official release"
+        return 0
+    fi
+
+    local dest_dir="$HOME/.local/bin"
+    mkdir -p "$dest_dir"
+    if curl -sL "$url" -o "$dest_dir/kubectl" \
+        && chmod +x "$dest_dir/kubectl"; then
+        log_info "Installed kubectl ${version} to $dest_dir/kubectl"
+        export PATH="$dest_dir:$PATH"
+        if ! echo "$PATH" | tr ':' '\n' | grep -qx "$dest_dir"; then
+            log_warn "$dest_dir is not in your PATH. Add it to your shell profile: export PATH=\"$dest_dir:\$PATH\""
+        fi
+        return 0
+    fi
+
+    log_warn "Failed to install kubectl"
+    return 1
+}
+
 # Install Python dependencies from requirements.txt
 install_python_requirements() {
     if [ ! -f "requirements.txt" ]; then
@@ -246,7 +290,7 @@ install_python_requirements() {
     return 0
 }
 
-# Check for required commands (kubectl is optional as it will be installed with k3s)
+# Check for required commands
 REQUIRED_COMMANDS=("curl" "python3")
 MISSING_COMMANDS=()
 
@@ -265,10 +309,11 @@ fi
 install_yq || true
 install_dependency jq jq || true
 install_k9s || true
+install_kubectl || true
 install_python_requirements || true
 
 # Verify yq and jq exist after attempted installation
-for cmd in yq jq; do
+for cmd in yq jq kubectl; do
     if ! command_exists "$cmd"; then
         log_error "Required command '$cmd' is not installed"
         exit 1
@@ -419,20 +464,10 @@ install_monitoring_stack() {
         fi
     fi
     
-    # Check if kustomize is available
-    if ! command_exists kustomize; then
-        log_info "Installing kustomize..."
-        if ! (curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash); then
-            log_warn "Failed to install kustomize. Skipping monitoring stack installation."
-            return 1
-        fi
-        export PATH="$PATH:$(pwd)"
-    fi
-    
-    # Apply kustomization
+    # Apply kustomization using kubectl
     if [ -d "kustomize" ]; then
         log_info "Applying kustomize configuration..."
-        if ! (cd kustomize && kustomize build . | kubectl apply -f - -n "$namespace"); then
+        if ! kubectl kustomize kustomize | kubectl apply -f - -n "$namespace"; then
             log_warn "Failed to apply kustomize configuration"
             return 1
         fi
