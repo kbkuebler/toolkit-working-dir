@@ -31,6 +31,11 @@ This project provides a streamlined way to deploy a monitoring stack across mult
    ./bootstrap.sh
    ```
 
+   Alternatively, if you want to apply the Kubernetes manifests directly, run:
+   ```bash
+   kubectl apply -k kustomize
+   ```
+
    This will:
    - Validate your environment
   - Install `kubectl` and k3s if a cluster is not already available
