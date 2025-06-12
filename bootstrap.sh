@@ -296,28 +296,33 @@ try:
     if 'clusters' not in config or not isinstance(config['clusters'], list):
         config['clusters'] = []
     
-    # Process each cluster
-    for cluster in config['clusters']:
+    # Convert cluster entries that are just IP strings into dictionaries
+    normalized = []
+    for idx, cluster in enumerate(config['clusters']):
+        if isinstance(cluster, str):
+            cluster = {'ip': cluster}
         if not isinstance(cluster, dict):
             continue
-            
+        normalized.append(cluster)
+
         # Set default ports if not specified
         if 'ports' not in cluster or not isinstance(cluster['ports'], dict):
             cluster['ports'] = {}
-        
+
         ports = cluster['ports']
         ports.setdefault('metrics', 9100)
         ports.setdefault('api', 9101)
         ports.setdefault('c_metrics', 9102)
         ports.setdefault('c_advisor', 9103)
-        
+
         # Ensure cluster has a name
         if 'name' not in cluster or not cluster['name']:
-            cluster['name'] = f"cluster-{config['clusters'].index(cluster) + 1}"
-        
+            cluster['name'] = f"cluster-{idx + 1}"
+
         # Ensure cluster has labels
         if 'labels' not in cluster or not isinstance(cluster['labels'], dict):
             cluster['labels'] = {}
+    config['clusters'] = normalized
     
     # Set up Jinja2 environment
     env = Environment(loader=FileSystemLoader('.'), trim_blocks=True, lstrip_blocks=True)
