@@ -209,6 +209,30 @@ install_yq() {
     return 1
 }
 
+# Install Python dependencies from requirements.txt
+install_python_requirements() {
+    if [ ! -f "requirements.txt" ]; then
+        log_warn "requirements.txt not found, skipping Python package installation"
+        return 0
+    fi
+
+    if ! command_exists pip3; then
+        log_info "Installing pip3..."
+        if ! install_dependency pip3 python3-pip; then
+            log_warn "Failed to install pip3"
+            return 1
+        fi
+    fi
+
+    log_info "Installing Python packages from requirements.txt..."
+    if ! pip3 install -r requirements.txt >/dev/null 2>&1; then
+        log_warn "Failed to install Python requirements"
+        return 1
+    fi
+
+    return 0
+}
+
 # Check for required commands (kubectl is optional as it will be installed with k3s)
 REQUIRED_COMMANDS=("curl" "python3")
 MISSING_COMMANDS=()
@@ -228,6 +252,7 @@ fi
 install_yq || true
 install_dependency jq jq || true
 install_k9s || true
+install_python_requirements || true
 
 # Verify yq and jq exist after attempted installation
 for cmd in yq jq; do
