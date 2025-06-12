@@ -1,0 +1,19 @@
+clusters:
+- ip: 10.200.120.200
+- ip: 10.200.120.202
+dashboard:
+  port: 3000
+  theme: dark
+global:
+  namespace: monitoring
+  prometheus:
+    evaluation_interval: 15s
+    retention: 7d
+    scrape_interval: 15s
+    storage_size: 10Gi
+hammerspace:
+  api_url: ''
+  password: ''
+  ssl_verify: true
+  timeout: 30
+  username: ''

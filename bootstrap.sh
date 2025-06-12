@@ -166,7 +166,7 @@ install_k9s() {
 
     if curl -sL "https://github.com/derailed/k9s/releases/download/${version}/${tar}" -o "$tar" \
         && tar -xzf "$tar" k9s >/dev/null 2>&1 \
-        && mv k9s /usr/local/bin/ >/dev/null 2>&1 \
+        && mv k9s ~/.local/bin/ >/dev/null 2>&1 \
         && rm -f "$tar"; then
         log_info "Installed k9s ${version}"
         return 0
