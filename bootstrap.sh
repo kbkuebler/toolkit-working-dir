@@ -206,6 +206,7 @@ done
 
 # Set file paths
 PROMETHEUS_CONFIG="$TEMP_DIR/prometheus-config-generated.yaml"
+FINAL_CONFIG="$TEMP_DIR/final_config.yaml"
 
 # Function to validate configuration
 validate_config() {
@@ -237,31 +238,12 @@ validate_config() {
 # Function to discover nodes using Hammerspace API
 discover_nodes() {
     log_info "Discovering nodes from Hammerspace..."
-    
-    # Get credentials from environment or config
-    local hs_username="${HS_USERNAME:-$(yq e '.hammerspace.username // ""' "$CONFIG_FILE")}"
-    local hs_password="${HS_PASSWORD:-$(yq e '.hammerspace.password // ""' "$CONFIG_FILE")}"
-    local hs_api_url="${HS_API_URL:-$(yq e '.hammerspace.api_url // ""' "$CONFIG_FILE")}"
-    
-    if [ -z "$hs_username" ] || [ -z "$hs_password" ] || [ -z "$hs_api_url" ]; then
-        log_warn "Missing Hammerspace credentials or API URL. Skipping node discovery."
-        return 1
-    fi
-    
-    # Call the discover_nodes.py script
+
     if ! python3 scripts/discover_nodes.py \
         --config "$CONFIG_FILE" \
-        --output "$TEMP_DIR/discovered_nodes.yaml"; then
-        log_warn "Failed to discover nodes from Hammerspace"
-        return 1
-    fi
-    
-    # Merge discovered nodes with existing config
-    if [ -f "$TEMP_DIR/discovered_nodes.yaml" ]; then
-        log_info "Merging discovered nodes into configuration..."
-        yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' "$CONFIG_FILE" "$TEMP_DIR/discovered_nodes.yaml" > "$TEMP_DIR/merged_config.yaml"
-        mv "$TEMP_DIR/merged_config.yaml" "$CONFIG_FILE"
-        log_info "Configuration updated with discovered nodes"
+        --output "$FINAL_CONFIG" >/dev/null; then
+        log_warn "Failed to run node discovery. Using static configuration."
+        cp "$CONFIG_FILE" "$FINAL_CONFIG"
     fi
 }
 
@@ -280,7 +262,7 @@ from jinja2 import Environment, FileSystemLoader
 
 try:
     # Load config
-    with open('$CONFIG_FILE', 'r') as f:
+    with open('$FINAL_CONFIG', 'r') as f:
         config = yaml.safe_load(f) or {}
     
     # Set default values if not present
@@ -436,18 +418,25 @@ main() {
     
     # Validate configuration
     validate_config
-    
-    # Discover nodes if enabled
+
+    # Prepare final configuration
     if [ "$DISCOVER_NODES" = true ]; then
         discover_nodes
+    else
+        cp "$CONFIG_FILE" "$FINAL_CONFIG"
     fi
-    
+
     # Generate Prometheus configuration
     generate_prometheus_config
     
     # Show config if config-only mode
     if [ "$CONFIG_ONLY" = true ]; then
-        log_info "Generated Configuration"
+        log_info "Final configuration written to $FINAL_CONFIG"
+        if [ -f "$FINAL_CONFIG" ]; then
+            cat "$FINAL_CONFIG"
+        fi
+        echo
+        log_info "Prometheus scrape config written to $PROMETHEUS_CONFIG"
         if [ -f "$PROMETHEUS_CONFIG" ]; then
             cat "$PROMETHEUS_CONFIG"
         else
@@ -459,7 +448,7 @@ main() {
     fi
     
     # Install monitoring stack
-    local namespace="$(yq e '.global.namespace // "monitoring"' "$CONFIG_FILE")"
+    local namespace="$(yq e '.global.namespace // "monitoring"' "$FINAL_CONFIG")"
     install_monitoring_stack "$namespace"
     
     # Cleanup

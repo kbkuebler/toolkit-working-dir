@@ -8,7 +8,6 @@ with the discovered node information.
 
 import os
 import sys
-import json
 import argparse
 import yaml
 from typing import Dict, Any, List, Optional, Union
@@ -16,6 +15,10 @@ import logging
 import requests
 from urllib.parse import urljoin
 from requests.auth import HTTPBasicAuth
+
+# Set up basic logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 # Add the SDK directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Hammerspace_SDK', 'hammerspace-api'))
@@ -218,19 +221,25 @@ def main():
     
     parser = argparse.ArgumentParser(description='Discover nodes from Hammerspace clusters')
     parser.add_argument('--config', required=True, help='Path to config file')
-    parser.add_argument('--output', help='Output file (default: stdout)')
+    parser.add_argument('--output', required=True, help='Output file for processed config')
+    parser.add_argument('--username', help='Hammerspace API username')
+    parser.add_argument('--password', help='Hammerspace API password')
+    parser.add_argument('--api-url', help='Hammerspace API URL')
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     
     args = parser.parse_args()
-    
-    # Get credentials from args or environment
-    username = args.username or os.getenv('HS_USERNAME')
-    password = args.password or os.getenv('HS_PASSWORD')
-    
-    if not username or not password:
-        print("Error: Hammerspace username and password must be provided via --username/--password "
-              "or HS_USERNAME/HS_PASSWORD environment variables", file=sys.stderr)
-        sys.exit(1)
+
+    # Configure logging level
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
+    # Allow credentials and API URL from CLI to override environment
+    if args.username:
+        os.environ['HS_USERNAME'] = args.username
+    if args.password:
+        os.environ['HS_PASSWORD'] = args.password
+    if args.api_url:
+        os.environ['HS_API_URL'] = args.api_url
     
     try:
         # Load config
@@ -248,9 +257,9 @@ def main():
         if 'global' not in updated_config:
             updated_config['global'] = config.get('global', {})
         
-        # Save updated config as JSON for easier processing in the template
+        # Save updated config as YAML so it can be consumed directly
         with open(args.output, 'w') as f:
-            json.dump(updated_config, f, indent=2)
+            yaml.safe_dump(updated_config, f)
             
         print(f"✓ Configuration updated with discovered nodes")
         
