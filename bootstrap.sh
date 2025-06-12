@@ -467,7 +467,7 @@ install_monitoring_stack() {
     # Apply kustomization using kubectl
     if [ -d "kustomize" ]; then
         log_info "Applying kustomize configuration..."
-        if ! kubectl kustomize kustomize | kubectl apply -f - -n "$namespace"; then
+        if ! kubectl apply -k kustomize -n "$namespace"; then
             log_warn "Failed to apply kustomize configuration"
             return 1
         fi

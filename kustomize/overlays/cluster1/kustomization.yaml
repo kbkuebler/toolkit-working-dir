@@ -9,7 +9,7 @@ resources:
 namespace: monitoring-cluster1
 
 # Cluster-specific configurations
-commonLabels:
+labels:
   cluster: cluster1
   environment: production  # Can be overridden per-cluster
 
