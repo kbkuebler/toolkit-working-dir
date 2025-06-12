@@ -71,11 +71,21 @@ data:
           # Add Hammerspace specific fields if this is a Hammerspace log
           if .appname == "Hammerspace" {
             .is_hammerspace = true
-            
-            # Simple message cleanup for Hammerspace logs
+
+            # Parse event details when present
             if contains(.message, "Description=") {
-              # Just add a prefix to indicate it's a Hammerspace event
-              .message = "Hammerspace Event: " + .message
+              # Attempt to capture event type and description
+              event, err = parse_regex(
+                to_string(.message),
+                r"(?:(?:EventType)|(?:Type))=(?P<event_type>[^\s;]+).*?Description=\"?(?P<description>[^\";]+)"
+              )
+              if err == null {
+                .event_type = event.event_type
+                .description = event.description
+              }
+
+              # Add a prefix to indicate it's a Hammerspace event
+              .message = "Hammerspace Event: " + to_string(.message)
             }
           }
 
@@ -93,6 +103,8 @@ data:
           service: "{{ service }}"
           level: "{{ level }}"
           appname: "{{ appname }}"
+          event_type: "{{ event_type }}"
+          description: "{{ description }}"
         request:
           timeout_secs: 30
           retry_attempts: 3
