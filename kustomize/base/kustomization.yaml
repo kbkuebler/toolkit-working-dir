@@ -11,7 +11,7 @@ resources:
   - grafana/
 
 # Common configurations for all clusters
-commonLabels:
+labels:
   app.kubernetes.io/part-of: monitoring-stack
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/version: "1.0"

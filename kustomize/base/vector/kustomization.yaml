@@ -8,5 +8,5 @@ resources:
 
 namespace: monitoring
 
-commonLabels:
+labels:
   app: vector
