@@ -1,0 +1,50 @@
+# Hammerspace API Configuration
+hammerspace:
+  # Credentials can be set here or via HS_USERNAME/HS_PASSWORD environment variables
+  username: ""  # Will use HS_USERNAME if empty
+  password: ""  # Will use HS_PASSWORD if empty
+  api_url: ""   # Will use HS_API_URL if empty
+  ssl_verify: true
+  timeout: 30    # API timeout in seconds
+
+# Cluster configurations
+clusters:
+  - name: boston
+    ip: 10.200.120.200
+    description: "Boston Production Cluster"
+    labels:
+      region: us-east
+      environment: production
+    ports:
+      metrics: 9100
+      api: 9101
+      c_metrics: 9102
+      c_advisor: 9103
+
+  - name: new-jersey
+    ip: 10.200.120.202
+    description: "New Jersey DR Cluster"
+    labels:
+      region: us-east
+      environment: dr
+    ports:
+      metrics: 9100
+      api: 9101
+      c_metrics: 9102
+      c_advisor: 9103
+
+# Global settings
+global:
+  namespace: monitoring
+  
+  # Prometheus configuration
+  prometheus:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+    retention: 7d
+    storage_size: 10Gi
+
+# Dashboard configuration
+dashboard:
+  port: 3000  # Grafana default port
+  theme: dark
