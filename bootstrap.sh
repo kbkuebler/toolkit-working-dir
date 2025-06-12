@@ -308,21 +308,21 @@ discover_nodes() {
 # Function to generate Prometheus configuration
 generate_prometheus_config() {
     log_info "Generating Prometheus configuration..."
-    
+
     # Create output directory if it doesn't exist
     mkdir -p "$(dirname "$PROMETHEUS_CONFIG")"
-    
+
     # Render the Prometheus config using Python
-    if ! python3 -c "
+    if ! python3 <<PYTHON
 import yaml
 import sys
 from jinja2 import Environment, FileSystemLoader
 
 try:
     # Load config
-    with open('$FINAL_CONFIG', 'r') as f:
+    with open("$FINAL_CONFIG", "r") as f:
         config = yaml.safe_load(f) or {}
-    
+
     # Set default values if not present
     config.setdefault('global', {})
     config['global'].setdefault('prometheus', {
@@ -331,11 +331,11 @@ try:
         'retention': '7d',
         'storage_size': '10Gi'
     })
-    
+
     # Ensure clusters is a list with proper structure
     if 'clusters' not in config or not isinstance(config['clusters'], list):
         config['clusters'] = []
-    
+
     # Convert cluster entries that are just IP strings into dictionaries
     normalized = []
     for idx, cluster in enumerate(config['clusters']):
@@ -363,31 +363,31 @@ try:
         if 'labels' not in cluster or not isinstance(cluster['labels'], dict):
             cluster['labels'] = {}
     config['clusters'] = normalized
-    
+
     # Set up Jinja2 environment
     env = Environment(loader=FileSystemLoader('.'), trim_blocks=True, lstrip_blocks=True)
     template = env.get_template('prometheus/configmap.yaml.j2')
-    
+
     # Render template
     rendered = template.render(
         global_config=config.get('global', {}),
         clusters=config.get('clusters', []),
         namespace=config.get('global', {}).get('namespace', 'monitoring')
     )
-    
+
     # Write to file
-    with open('$PROMETHEUS_CONFIG', 'w') as f:
+    with open("$PROMETHEUS_CONFIG", "w") as f:
         f.write(rendered)
-        
+
 except Exception as e:
-    print(f'Error generating Prometheus configuration: {str(e)}', file=sys.stderr)
+    print(f"Error generating Prometheus configuration: {str(e)}", file=sys.stderr)
     sys.exit(1)
-"
+PYTHON
     then
         log_error "Failed to generate Prometheus configuration"
         exit 1
     fi
-    
+
     log_info "Generated Prometheus config at $PROMETHEUS_CONFIG"
 }
 
