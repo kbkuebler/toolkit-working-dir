@@ -6,9 +6,9 @@ This project provides a streamlined way to deploy a monitoring stack across mult
 
 - Python 3.8+
 - `curl`
-- (Optional) `kubectl` if connecting to an existing cluster
-- The script will automatically install Python packages listed in `requirements.txt` using `pip3` if needed.
-- The script will attempt to install `k3s`, `jq`, and `k9s`. If `yq` cannot be installed via a package manager, it will be downloaded from the official GitHub release.
+- The script will automatically install `kubectl`, `k3s`, `jq`, and `k9s` when possible.
+- If `yq` cannot be installed via a package manager, it will be downloaded from the official GitHub release.
+- Python packages listed in `requirements.txt` will be installed automatically using `pip3` if needed.
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ This project provides a streamlined way to deploy a monitoring stack across mult
 
    This will:
    - Validate your environment
-   - Install k3s if a cluster is not already available
+  - Install `kubectl` and k3s if a cluster is not already available
   - Install `jq` and `k9s` when possible, downloading `yq` from GitHub if a package manager isn't available
   - Install required Python packages from `requirements.txt`
    - Deploy the monitoring stack to all specified clusters
@@ -99,7 +99,7 @@ The bootstrap process consists of these main components:
 - **Missing dependencies**:
   - `python3` (the script installs requirements from `requirements.txt`)
   - `curl`
-  - The script will attempt to install `kubectl` via k3s and will install `jq` and `k9s` when possible. `yq` will be downloaded from the official GitHub release if it cannot be installed via a package manager.
+  - The script installs `kubectl`, `jq`, and `k9s` when possible. `yq` will be downloaded from the official GitHub release if it cannot be installed via a package manager.
 
 - **Kubernetes access**: 
   ```bash
