@@ -6,10 +6,9 @@ resources:
   - service.yaml
   - service-monitor.yaml
   - deployment.yaml
-  - configmap.yaml
 
 # Common labels for all Prometheus resources
-commonLabels:
+labels:
   app.kubernetes.io/component: prometheus
   app.kubernetes.io/name: prometheus
 

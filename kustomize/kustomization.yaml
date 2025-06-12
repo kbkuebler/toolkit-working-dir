@@ -12,7 +12,7 @@ resources:
   # Add more cluster overlays as needed
 
 # Common configurations across all clusters
-commonLabels:
+labels:
   app.kubernetes.io/part-of: monitoring-stack
   app.kubernetes.io/managed-by: kustomize
 
