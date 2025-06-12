@@ -7,7 +7,7 @@ This project provides a streamlined way to deploy a monitoring stack across mult
 - Python 3.8+
 - `curl`
 - (Optional) `kubectl` if connecting to an existing cluster
-- The script will attempt to install `k3s`, `yq`, `jq`, and `k9s` if they are not already present.
+- The script will attempt to install `k3s`, `jq`, and `k9s`. If `yq` cannot be installed via a package manager, it will be downloaded from the official GitHub release.
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ This project provides a streamlined way to deploy a monitoring stack across mult
    This will:
    - Validate your environment
    - Install k3s if a cluster is not already available
-   - Install `yq`, `jq`, and `k9s` when possible
+  - Install `jq` and `k9s` when possible, downloading `yq` from GitHub if a package manager isn't available
    - Deploy the monitoring stack to all specified clusters
 
 ## Configuration
@@ -56,7 +56,7 @@ The bootstrap process consists of these main components:
 
 1. **bootstrap.sh**: Main entry point that handles:
    - Environment validation (curl, python3)
-   - Automatic installation of k3s, yq, jq, and k9s when possible
+  - Automatic installation of k3s, jq, and k9s when possible; `yq` is downloaded from GitHub if necessary
    - Configuration loading and processing
    - Node discovery via Hammerspace SDK
    - Template rendering and Kubernetes deployment
@@ -96,7 +96,7 @@ The bootstrap process consists of these main components:
 - **Missing dependencies**:
   - `python3` with jinja2 (`pip install jinja2`)
   - `curl`
-  - The script will attempt to install `kubectl` via k3s as well as `yq`, `jq`, and `k9s` if they are not found.
+  - The script will attempt to install `kubectl` via k3s and will install `jq` and `k9s` when possible. `yq` will be downloaded from the official GitHub release if it cannot be installed via a package manager.
 
 - **Kubernetes access**: 
   ```bash
