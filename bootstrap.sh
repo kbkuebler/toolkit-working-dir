@@ -176,6 +176,39 @@ install_k9s() {
     return 1
 }
 
+# Install yq using package manager or GitHub release
+install_yq() {
+    if command_exists yq; then
+        return 0
+    fi
+
+    # Try to install via package manager first
+    if install_dependency yq yq; then
+        return 0
+    fi
+
+    # Fallback to GitHub release when package manager is unavailable
+    # Maintainers: this ensures yq is available even on minimal systems
+    local version="v4.45.4"
+    local os=$(uname | tr '[:upper:]' '[:lower:]')
+    local arch=$(uname -m)
+    case "$arch" in
+        x86_64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+    esac
+
+    local url="https://github.com/mikefarah/yq/releases/download/${version}/yq_${os}_${arch}"
+
+    if curl -sL "$url" -o /usr/local/bin/yq \
+        && chmod +x /usr/local/bin/yq; then
+        log_info "Installed yq ${version} from GitHub release"
+        return 0
+    fi
+
+    log_warn "Failed to install yq"
+    return 1
+}
+
 # Check for required commands (kubectl is optional as it will be installed with k3s)
 REQUIRED_COMMANDS=("curl" "python3")
 MISSING_COMMANDS=()
@@ -192,7 +225,7 @@ if [ ${#MISSING_COMMANDS[@]} -gt 0 ]; then
 fi
 
 # Attempt to install auxiliary tools
-install_dependency yq yq || true
+install_yq || true
 install_dependency jq jq || true
 install_k9s || true
 
