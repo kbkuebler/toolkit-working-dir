@@ -18,13 +18,11 @@ This project provides a streamlined way to deploy a monitoring stack across mult
    ```
 
 2. **Edit the configuration**
-   Update `config/config.yaml` with your cluster details:
+   Update `config/config.yaml` with the IP addresses of your clusters:
    ```yaml
    clusters:
-     - name: cluster1
-       api_server: "10.200.120.200"
-       namespace: monitoring
-     # Add more clusters as needed
+     - 10.200.120.200
+     - 10.200.120.202
    ```
 
 3. **Run the bootstrap script**
@@ -75,16 +73,10 @@ The bootstrap process consists of these main components:
 
 ## Adding a New Cluster
 
-1. Add a new entry to the `clusters` section in `config/config.yaml`
+1. Add a new IP address to the `clusters` section in `config/config.yaml`
    ```yaml
    clusters:
-     your_cluster_name:
-       cluster_ip: "10.x.x.x"
-       # Optional: Define static nodes if not using discovery
-       # nodes:
-       #   - type: anvil
-       #     ip: 10.x.x.x
-       #     name: node-name
+     - 10.x.x.x
    ```
 
 2. Run the bootstrap script:

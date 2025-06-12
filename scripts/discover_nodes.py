@@ -12,6 +12,10 @@ import json
 import argparse
 import yaml
 from typing import Dict, Any, List, Optional, Union
+import logging
+import requests
+from urllib.parse import urljoin
+from requests.auth import HTTPBasicAuth
 
 # Add the SDK directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Hammerspace_SDK', 'hammerspace-api'))
@@ -57,6 +61,16 @@ def load_config(config_file: str) -> Dict[str, Any]:
         raise ConfigError(f"Invalid YAML in config file: {e}")
     except Exception as e:
         raise ConfigError(f"Error loading config file: {e}")
+
+def normalize_clusters(clusters: List[Union[str, Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    """Ensure each cluster entry is a dictionary with at least an IP address."""
+    normalized = []
+    for idx, c in enumerate(clusters):
+        if isinstance(c, str):
+            normalized.append({'ip': c})
+        elif isinstance(c, dict):
+            normalized.append(c)
+    return normalized
 
 def get_hs_credentials(config: Dict[str, Any]) -> Optional[HTTPBasicAuth]:
     """
@@ -140,6 +154,7 @@ def discover_nodes(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Make a copy to avoid modifying the original
     config = config.copy()
+    config['clusters'] = normalize_clusters(config.get('clusters', []))
     
     # Get credentials and API URL
     auth = get_hs_credentials(config)
@@ -227,7 +242,7 @@ def main():
             config['clusters'] = []
         
         # Update config with discovered nodes
-        updated_config = update_config_with_nodes(config, username, password)
+        updated_config = discover_nodes(config)
         
         # Ensure we have the global section
         if 'global' not in updated_config:
@@ -242,12 +257,6 @@ def main():
     except yaml.YAMLError as e:
         print(f"Error parsing YAML config: {str(e)}", file=sys.stderr)
         sys.exit(1)
-    except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
-        sys.exit(1)
-            
-        print(f"Configuration updated with discovered nodes and saved to {args.output}")
-        
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
