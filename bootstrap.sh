@@ -101,13 +101,83 @@ fi
 # Create temp directory if it doesn't exist
 mkdir -p "$TEMP_DIR"
 
+
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Attempt to install a command using available package managers
+install_dependency() {
+    local cmd="$1"
+    local pkg="${2:-$1}"
+
+    if command_exists "$cmd"; then
+        return 0
+    fi
+
+    log_info "Attempting to install $cmd..."
+
+    if command_exists apt-get; then
+        if ! apt-get update -y >/dev/null 2>&1 || ! apt-get install -y "$pkg" >/dev/null 2>&1; then
+            log_warn "Failed to install $cmd via apt-get"
+            return 1
+        fi
+        return 0
+    elif command_exists yum; then
+        if ! yum install -y "$pkg" >/dev/null 2>&1; then
+            log_warn "Failed to install $cmd via yum"
+            return 1
+        fi
+        return 0
+    elif command_exists brew; then
+        if ! brew install "$pkg" >/dev/null 2>&1; then
+            log_warn "Failed to install $cmd via brew"
+            return 1
+        fi
+        return 0
+    fi
+
+    log_warn "No supported package manager found to install $cmd"
+    return 1
+}
+
+# Install k9s from package manager or GitHub release if possible
+install_k9s() {
+    if command_exists k9s; then
+        return 0
+    fi
+
+    # Try using package manager first
+    if install_dependency k9s k9s; then
+        return 0
+    fi
+
+    # Fallback to GitHub release
+    local version="v0.32.4"
+    local os=$(uname | tr '[:upper:]' '[:lower:]')
+    local arch=$(uname -m)
+    case "$arch" in
+        x86_64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+    esac
+
+    local tar="k9s_${version}_${os}_${arch}.tar.gz"
+
+    if curl -sL "https://github.com/derailed/k9s/releases/download/${version}/${tar}" -o "$tar" \
+        && tar -xzf "$tar" k9s >/dev/null 2>&1 \
+        && mv k9s /usr/local/bin/ >/dev/null 2>&1 \
+        && rm -f "$tar"; then
+        log_info "Installed k9s ${version}"
+        return 0
+    fi
+
+    log_warn "Failed to install k9s"
+    return 1
+}
+
 # Check for required commands (kubectl is optional as it will be installed with k3s)
-REQUIRED_COMMANDS=("yq" "jq" "curl" "python3")
+REQUIRED_COMMANDS=("curl" "python3")
 MISSING_COMMANDS=()
 
 for cmd in "${REQUIRED_COMMANDS[@]}"; do
@@ -118,10 +188,21 @@ done
 
 if [ ${#MISSING_COMMANDS[@]} -gt 0 ]; then
     log_error "Missing required commands: ${MISSING_COMMANDS[*]}"
-    log_info "Please install them using your system's package manager."
-    log_info "For example, on Ubuntu/Debian: apt-get install -y yq jq curl python3"
     exit 1
 fi
+
+# Attempt to install auxiliary tools
+install_dependency yq yq || true
+install_dependency jq jq || true
+install_k9s || true
+
+# Verify yq and jq exist after attempted installation
+for cmd in yq jq; do
+    if ! command_exists "$cmd"; then
+        log_error "Required command '$cmd' is not installed"
+        exit 1
+    fi
+done
 
 # Set file paths
 PROMETHEUS_CONFIG="$TEMP_DIR/prometheus-config-generated.yaml"
@@ -337,6 +418,16 @@ cleanup() {
 # Main function
 main() {
     log_info "Starting bootstrap process..."
+
+    # Ensure k3s is installed and running
+    if [ -x "scripts/setup_k3s.sh" ]; then
+        log_info "Checking k3s installation..."
+        if ! scripts/setup_k3s.sh >/dev/null 2>&1; then
+            log_warn "k3s setup failed or is unavailable"
+        fi
+    else
+        log_warn "scripts/setup_k3s.sh not found; skipping k3s setup"
+    fi
     
     # Validate configuration
     validate_config
