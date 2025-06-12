@@ -370,7 +370,7 @@ try:
 
     # Render template
     rendered = template.render(
-        global_config=config.get('global', {}),
+        **{"global": config.get('global', {})},
         clusters=config.get('clusters', []),
         namespace=config.get('global', {}).get('namespace', 'monitoring')
     )
