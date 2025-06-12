@@ -9,29 +9,10 @@ hammerspace:
 
 # Cluster configurations
 clusters:
-  - name: boston
-    ip: 10.200.120.200
-    description: "Boston Production Cluster"
-    labels:
-      region: us-east
-      environment: production
-    ports:
-      metrics: 9100
-      api: 9101
-      c_metrics: 9102
-      c_advisor: 9103
-
-  - name: new-jersey
-    ip: 10.200.120.202
-    description: "New Jersey DR Cluster"
-    labels:
-      region: us-east
-      environment: dr
-    ports:
-      metrics: 9100
-      api: 9101
-      c_metrics: 9102
-      c_advisor: 9103
+  # List the IP address of each cluster. Node discovery will populate
+  # names, labels, and ports automatically.
+  - 10.200.120.200
+  - 10.200.120.202
 
 # Global settings
 global:
