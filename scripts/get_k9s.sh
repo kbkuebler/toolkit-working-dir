@@ -31,8 +31,7 @@ if command -v k9s &> /dev/null; then
 fi
 
 # Determine the target directory
-TARGET_DIR="${HOME}/.local/bin"
-mkdir -p "${TARGET_DIR}"
+TARGET_DIR="/usr/local/bin"
 
 # Add target directory to PATH if not already present
 if ! echo ":${PATH}:" | grep -q ":${TARGET_DIR}:"; then

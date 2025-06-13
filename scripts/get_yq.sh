@@ -23,6 +23,17 @@ log_error() {
     exit 1
 }
 
+# Check if running as root, and if not, re-run with sudo if possible
+if [ "$(id -u)" -ne 0 ]; then
+    # If we're being run non-interactively (like from bootstrap), just error out
+    if [ ! -t 1 ]; then
+        log_error "This script needs to be run as root"
+    fi
+    # If we're in a terminal, prompt for sudo
+    exec sudo -E "$0" "$@"
+    exit $?
+fi
+
 # Check if yq is already installed
 if command -v yq &> /dev/null; then
     log_info "yq is already installed at $(which yq)"
@@ -31,7 +42,7 @@ if command -v yq &> /dev/null; then
 fi
 
 # Determine the target directory
-TARGET_DIR="${HOME}/.local/bin"
+TARGET_DIR="/usr/local/bin"
 mkdir -p "${TARGET_DIR}"
 
 # Add target directory to PATH if not already present

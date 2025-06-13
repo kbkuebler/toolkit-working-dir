@@ -154,7 +154,9 @@ run_script() {
     fi
     
     chmod +x "$script_path"
-    if ! "$script_path"; then
+    
+    # Run the script with sudo -E to preserve environment
+    if ! sudo -E "$script_path"; then
         log_error "Failed to run ${script}"
         return 1
     fi
