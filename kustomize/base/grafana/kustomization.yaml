@@ -8,5 +8,6 @@ resources:
 
 namespace: monitoring
 
-commonLabels:
-  app: grafana
+labels:
+  - pairs:
+      app: grafana

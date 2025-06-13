@@ -20,10 +20,11 @@ patches:
       labelSelector: app.kubernetes.io/name=prometheus
 
 # Cluster-specific configurations
-commonLabels:
-  cluster: cluster1
-  environment: production  # Can be overridden per-cluster
+labels:
+  - pairs:
+      cluster: cluster1
+      environment: production  # Can be overridden per-cluster
   
-# Apply common labels to all resources
+# Apply labels to all resources
 namespace: monitoring
 nameSuffix: -cluster1

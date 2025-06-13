@@ -11,10 +11,11 @@ resources:
   - overlays/cluster1/
   # Add more cluster overlays as needed
 
-# Common configurations across all clusters
-commonLabels:
-  app.kubernetes.io/part-of: monitoring-stack
-  app.kubernetes.io/managed-by: kustomize
+# Labels for all resources across all clusters
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: monitoring-stack
+      app.kubernetes.io/managed-by: kustomize
 
 # Default namespace for resources that don't specify one
 namespace: monitoring

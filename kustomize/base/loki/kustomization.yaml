@@ -8,5 +8,6 @@ resources:
 
 namespace: monitoring
 
-commonLabels:
-  app: loki
+labels:
+  - pairs:
+      app: loki
