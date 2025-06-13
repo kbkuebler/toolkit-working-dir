@@ -462,7 +462,7 @@ generate_csi_secret() {
     log_info "[DEBUG] Secret directory: ${secret_dir}"
     log_info "[DEBUG] Secret file: ${secret_file}"
     log_info "[DEBUG] Python path: $(which python3)"
-    log_info "[DEBUG] Script path: ${SCRIPT_DIR}/generate_csi_secret.py"
+    log_info "[DEBUG] Script path: ${SCRIPT_DIR}/scripts/generate_csi_secret.py"
     
     # Ensure the directory exists
     log_info "Creating secret directory: ${secret_dir}"
@@ -476,7 +476,7 @@ generate_csi_secret() {
     local temp_secret_file="${TEMP_DIR}/csi-secret-temp.yaml"
     
     # Generate the secret to a temporary file first
-    if ! python3 "${SCRIPT_DIR}/generate_csi_secret.py" \
+    if ! python3 "${SCRIPT_DIR}/scripts/generate_csi_secret.py" \
         --config "${CONFIG_FILE}" \
         --output "${temp_secret_file}" \
         --namespace kube-system; then
