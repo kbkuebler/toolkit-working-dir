@@ -9,6 +9,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="config/config.yaml"
 TEMP_DIR=".tmp"
 DISCOVER_NODES=true
@@ -451,13 +452,25 @@ PYTHON
 
 # Function to generate CSI secret
 generate_csi_secret() {
+    log_info "[DEBUG] Entering generate_csi_secret function"
     local secret_dir="kustomize/overlays/cluster1/csi-secret"
     local secret_file="${secret_dir}/generated-secret.yaml"
     
-    log_info "Generating CSI driver secret..."
+    log_info "[DEBUG] Starting CSI secret generation..."
+    log_info "[DEBUG] Current working directory: $(pwd)"
+    log_info "[DEBUG] Script directory: ${SCRIPT_DIR:-Not set}"
+    log_info "[DEBUG] Secret directory: ${secret_dir}"
+    log_info "[DEBUG] Secret file: ${secret_file}"
+    log_info "[DEBUG] Python path: $(which python3)"
+    log_info "[DEBUG] Script path: ${SCRIPT_DIR}/generate_csi_secret.py"
     
     # Ensure the directory exists
-    mkdir -p "${secret_dir}"
+    log_info "Creating secret directory: ${secret_dir}"
+    mkdir -p "${secret_dir}" || {
+        log_error "Failed to create directory: ${secret_dir}"
+        return 1
+    }
+    log_info "Directory contents: $(ls -la "${secret_dir}/.." | grep csi-secret || echo 'No csi-secret directory found')"
     
     # Create a temporary file for the secret
     local temp_secret_file="${TEMP_DIR}/csi-secret-temp.yaml"
@@ -522,6 +535,11 @@ install_monitoring_stack() {
             log_error "Failed to create namespace $namespace"
             return 1
         fi
+    fi
+    
+    # Generate CSI secret first
+    if ! generate_csi_secret; then
+        log_warn "Failed to generate CSI secret, but continuing with installation"
     fi
     
     # Apply kustomization using kubectl
