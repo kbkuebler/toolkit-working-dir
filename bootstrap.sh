@@ -636,7 +636,17 @@ main() {
     # Ensure k3s is installed and running
     if [ -x "scripts/setup_k3s.sh" ]; then
         log_info "Checking k3s installation..."
-        if ! scripts/setup_k3s.sh >/dev/null 2>&1; then
+        if scripts/setup_k3s.sh; then
+            # Set up kubeconfig if k3s is installed successfully
+            if [ -x "scripts/setup_kubeconfig.sh" ]; then
+                log_info "Setting up kubeconfig..."
+                if ! scripts/setup_kubeconfig.sh; then
+                    log_warn "Failed to set up kubeconfig"
+                fi
+            else
+                log_warn "scripts/setup_kubeconfig.sh not found; skipping kubeconfig setup"
+            fi
+        else
             log_warn "k3s setup failed or is unavailable"
         fi
     else
