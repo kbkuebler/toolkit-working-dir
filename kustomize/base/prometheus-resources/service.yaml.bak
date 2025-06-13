@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: prometheus
+    # These will be overridden by the overlay
+    cluster: ""
+    environment: ""
+  annotations:
+    # These will be overridden by the overlay
+    cluster: ""
+    region: ""
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 9090
+    targetPort: http
+    protocol: TCP
+  selector:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/name: prometheus

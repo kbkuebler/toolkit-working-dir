@@ -1,19 +1,22 @@
+hammerspace:
+  username: admin
+  password: 1Hammerspace!
+  api_url: https://10.200.120.200:8443/mgmt/v1.2/rest
+  ssl_verify: false
+  timeout: 30
 clusters:
 - ip: 10.200.120.200
 - ip: 10.200.120.202
+- name: kbk-hs-boston-dsx1.onaside.quest.local
+  ip: 10.200.120.201
+  type: DSX
+  discovered: true
+global:
+  prometheus:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+    retention: 7d
+    storage_size: 10Gi
 dashboard:
   port: 3000
   theme: dark
-global:
-  namespace: monitoring
-  prometheus:
-    evaluation_interval: 15s
-    retention: 7d
-    scrape_interval: 15s
-    storage_size: 10Gi
-hammerspace:
-  api_url: ''
-  password: ''
-  ssl_verify: true
-  timeout: 30
-  username: ''
