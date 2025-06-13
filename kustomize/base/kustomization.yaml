@@ -4,11 +4,12 @@ kind: Kustomization
 # Common namespace for all resources
 namespace: monitoring
 
-# Common labels for all resources
-commonLabels:
-  app.kubernetes.io/part-of: monitoring-stack
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/version: "1.0"
+# Labels for all resources
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: monitoring-stack
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/version: "1.0"
 
 # Common annotations
 commonAnnotations:
