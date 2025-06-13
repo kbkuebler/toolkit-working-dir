@@ -1,17 +1,33 @@
 #!/bin/bash
-set -euo pipefail
+
+# Exit on error
+set -e
+
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root to install system dependencies and k3s"
+    echo "Please run with sudo or as root"
+    exit 1
+fi
+
+# Set default values
+CONFIG_FILE="${PWD}/config/config.yaml"
+TEMP_DIR="${PWD}/.tmp"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
 
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Add local bin to PATH if it exists
+if [ -d "/usr/local/bin" ]; then
+    export PATH="/usr/local/bin:${PATH}"
+fi
+
 # Default values
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="config/config.yaml"
-TEMP_DIR=".tmp"
 DISCOVER_NODES=true
 CONFIG_ONLY=false
 CLEANUP=false
@@ -102,95 +118,90 @@ fi
 # Create temp directory if it doesn't exist
 mkdir -p "$TEMP_DIR"
 
-
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Attempt to install a command using available package managers
-install_dependency() {
-    local cmd="$1"
-    local pkg="${2:-$1}"
-
-    if command_exists "$cmd"; then
-        return 0
+# Function to run a script with error handling
+run_script() {
+    local script="$1"
+    local script_path="${SCRIPT_DIR}/scripts/${script}"
+    
+    if [ ! -f "$script_path" ]; then
+        log_error "Script not found: $script"
+        return 1
+    fi
+    
+    log_info "Running ${script}..."
+    # Install required dependencies
+    if ! install_dependencies; then
+        log_error "Failed to install required dependencies"
+        return 1
     fi
 
-    log_info "Attempting to install $cmd..."
-
-    if command_exists apt-get; then
-        if ! apt-get update -y >/dev/null 2>&1 || ! apt-get install -y "$pkg" >/dev/null 2>&1; then
-            log_warn "Failed to install $cmd via apt-get"
-            return 1
-        fi
-        return 0
-    elif command_exists yum; then
-        if ! yum install -y "$pkg" >/dev/null 2>&1; then
-            log_warn "Failed to install $cmd via yum"
-            return 1
-        fi
-        return 0
-    elif command_exists brew; then
-        if ! brew install "$pkg" >/dev/null 2>&1; then
-            log_warn "Failed to install $cmd via brew"
-            return 1
-        fi
-        return 0
+    # Install Python dependencies
+    if ! install_python_requirements; then
+        log_error "Failed to install Python dependencies"
+        return 1
     fi
-
-    log_warn "No supported package manager found to install $cmd"
-    return 1
+    
+    chmod +x "$script_path"
+    if ! "$script_path"; then
+        log_error "Failed to run ${script}"
+        return 1
+    fi
 }
 
-# Install k9s from package manager or GitHub release if possible
-install_k9s() {
-    if command_exists k9s; then
-        return 0
+# Install dependencies using dedicated scripts
+install_dependencies() {
+    log_info "Installing required dependencies..."
+    
+    # Install yq if not present
+    if ! command_exists yq; then
+        log_info "Installing yq..."
+        if ! run_script "get_yq.sh"; then
+            log_error "Failed to install yq. Please check the script and try again."
+            return 1
+        fi
     fi
-
-    # Try using package manager first
-    if install_dependency k9s k9s; then
-        return 0
+    
+    # Install kubectl if not present
+    if ! command_exists kubectl; then
+        log_info "Installing kubectl..."
+        if ! run_script "get_kubectl.sh"; then
+            log_error "Failed to install kubectl. Please check the script and try again."
+            return 1
+        fi
     fi
-
-    # Fallback to GitHub release
-    local version="v0.32.4"
-    local os=$(uname | tr '[:upper:]' '[:lower:]')
-    local arch=$(uname -m)
-    case "$arch" in
-        x86_64) arch="amd64" ;;
-        aarch64|arm64) arch="arm64" ;;
-    esac
-
-    local tar="k9s_${version}_${os}_${arch}.tar.gz"
-
-    if curl -sL "https://github.com/derailed/k9s/releases/download/${version}/${tar}" -o "$tar" \
-        && tar -xzf "$tar" k9s >/dev/null 2>&1 \
-        && mv k9s ~/.local/bin/ >/dev/null 2>&1 \
-        && rm -f "$tar"; then
-        log_info "Installed k9s ${version}"
-        return 0
+    
+    # Install k9s if not present (optional)
+    if ! command_exists k9s; then
+        log_info "Installing k9s (optional)..."
+        if ! run_script "get_k9s.sh"; then
+            log_warn "k9s installation failed but it's optional. Continuing..."
+        fi
     fi
-
-    log_warn "Failed to install k9s"
-    return 1
+    
+    # Verify all required commands are available
+    local missing_deps=()
+    for cmd in yq kubectl; do
+        if ! command_exists "$cmd"; then
+            missing_deps+=("$cmd")
+        fi
+    done
+    
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        log_error "Missing required dependencies: ${missing_deps[*]}"
+        return 1
+    fi
+    
+    return 0
 }
 
-# Install yq using package manager or GitHub release
+# Install yq using GitHub release
 install_yq() {
-    if command_exists yq; then
-        return 0
-    fi
-
-    # Try to install via package manager first
-    if install_dependency yq yq; then
-        return 0
-    fi
-
-    # Fallback to GitHub release when package manager is unavailable
-    # Maintainers: this ensures yq is available even on minimal systems
-    local version="v4.45.4"
+    local version="4.30.2"
     local os=$(uname | tr '[:upper:]' '[:lower:]')
     local arch=$(uname -m)
     case "$arch" in
@@ -590,6 +601,12 @@ cleanup() {
 main() {
     log_info "Starting bootstrap process..."
 
+    # Install required dependencies first
+    if ! install_dependencies; then
+        log_error "Failed to install required dependencies"
+        exit 1
+    fi
+
     # Ensure k3s is installed and running
     if [ -x "scripts/setup_k3s.sh" ]; then
         log_info "Checking k3s installation..."
@@ -601,7 +618,10 @@ main() {
     fi
     
     # Validate configuration
-    validate_config
+    if ! validate_config; then
+        log_error "Configuration validation failed"
+        exit 1
+    fi
 
     # Prepare final configuration
     if [ "$DISCOVER_NODES" = true ]; then
