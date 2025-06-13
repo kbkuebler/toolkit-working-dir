@@ -18,6 +18,17 @@ patches:
       kind: Deployment
       name: prometheus
       labelSelector: app.kubernetes.io/name=prometheus
+  # Use a different NodePort for the vector service on this cluster
+  - patch: |-
+      - op: replace
+        path: /spec/ports/0/nodePort
+        value: 32425
+      - op: replace
+        path: /spec/ports/1/nodePort
+        value: 32425
+    target:
+      kind: Service
+      labelSelector: app=vector
 
 # Cluster-specific configurations
 labels:

@@ -59,6 +59,11 @@ log_debug() {
     fi
 }
 
+# Print a success message
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
