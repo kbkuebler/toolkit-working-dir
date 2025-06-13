@@ -1,0 +1,29 @@
+#!/bin/bash
+# Kustomize exec plugin for generating Prometheus configuration
+
+set -euo pipefail
+
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )/../../../../.." && pwd )"
+
+# Path to the Python script
+PY_SCRIPT="${SCRIPT_DIR}/scripts/generate_prometheus_config.py"
+CONFIG_FILE="${SCRIPT_DIR}/config/config.yaml"
+TEMP_OUTPUT="/tmp/prometheus-config-$(date +%s).yaml"
+
+# Generate the Prometheus configuration
+"${PY_SCRIPT}" --config "${CONFIG_FILE}" --output "${TEMP_OUTPUT}"
+
+# Output the ConfigMap YAML with the generated configuration
+cat <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+$(cat "${TEMP_OUTPUT}" | sed 's/^/    /')
+EOF
+
+# Clean up
+rm -f "${TEMP_OUTPUT}"

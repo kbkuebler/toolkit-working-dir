@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+scrape_configs:
+- job_name: hammerspace-nodes
+  scrape_interval: 15s
+  static_configs:
+  - targets:
+    - 10.200.120.200:9100
+    - 10.200.120.202:9100
+    labels:
+      job: hammerspace
+      environment: production
+- job_name: prometheus
+  static_configs:
+  - targets:
+    - localhost:9090
+- job_name: node
+  kubernetes_sd_configs:
+  - role: node
+  relabel_configs:
+  - source_labels:
+    - __address__
+    regex: (.*):10250
+    replacement: ${1}:9100
+    target_label: __address__
+    action: replace
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)

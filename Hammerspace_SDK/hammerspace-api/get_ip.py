@@ -44,4 +44,4 @@ print("\n# Node Details:")
 for node_name, ip in node_ips.items():
     print(f"{node_name}: {ip}")
 
-print(f"\nFound {len(node_ips)} nodes (ANVIL/DSX)")ls
+print(f"\nFound {len(node_ips)} nodes (ANVIL/DSX)")

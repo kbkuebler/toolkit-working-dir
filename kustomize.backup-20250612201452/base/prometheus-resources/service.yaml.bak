@@ -5,6 +5,13 @@ metadata:
   labels:
     app.kubernetes.io/component: prometheus
     app.kubernetes.io/name: prometheus
+    # These will be overridden by the overlay
+    cluster: ""
+    environment: ""
+  annotations:
+    # These will be overridden by the overlay
+    cluster: ""
+    region: ""
 spec:
   type: ClusterIP
   ports:

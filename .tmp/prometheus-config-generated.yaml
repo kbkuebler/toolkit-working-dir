@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      scrape_timeout: 10s
+    
+    # Alerting configuration
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets: []
+    
+    # Rule files
+    rule_files:
+      - /etc/prometheus/rules/*.rules
+    
+    # Scrape configurations
+    scrape_configs:
+      # Scrape Prometheus itself
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+    
+      # Scrape kubelet metrics
+      - job_name: 'kubelet'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+    
+      # Scrape kube-state-metrics
+      - job_name: 'kube-state-metrics'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['monitoring']
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          action: keep
+          regex: kube-state-metrics
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: '8080|8081'
+    
+      # Scrape Vector metrics
+      - job_name: 'vector'
+        kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['monitoring']
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+
+      # Scrape cluster nodes
+      - job_name: 'cluster_1_nodes'
+        metrics_path: '/metrics'
+        static_configs:
+        - targets:
+            - '10.200.120.200:9100'  # node_exporter
+            - '10.200.120.200:9101'      # API
+            - '10.200.120.200:9102' # C-Metrics
+            - '10.200.120.200:9103' # cAdvisor
+          labels:
+            cluster: 'cluster-1'
+            instance: '10.200.120.200'
+      - job_name: 'cluster_2_nodes'
+        metrics_path: '/metrics'
+        static_configs:
+        - targets:
+            - '10.200.120.202:9100'  # node_exporter
+            - '10.200.120.202:9101'      # API
+            - '10.200.120.202:9102' # C-Metrics
+            - '10.200.120.202:9103' # cAdvisor
+          labels:
+            cluster: 'cluster-2'
+            instance: '10.200.120.202'
+      - job_name: 'kbk_hs_boston_dsx1.onaside.quest.local_nodes'
+        metrics_path: '/metrics'
+        static_configs:
+        - targets:
+            - '10.200.120.201:9100'  # node_exporter
+            - '10.200.120.201:9101'      # API
+            - '10.200.120.201:9102' # C-Metrics
+            - '10.200.120.201:9103' # cAdvisor
+          labels:
+            cluster: 'kbk-hs-boston-dsx1.onaside.quest.local'
+            instance: '10.200.120.201'

@@ -6,7 +6,6 @@ resources:
   - ../../base
   - namespace.yaml
   - prometheus-service.yaml
-  - csi-secret/  # Include the CSI secret resources
 
 patches:
   # Patch Prometheus configuration for this cluster
@@ -23,7 +22,3 @@ patches:
 commonLabels:
   cluster: cluster1
   environment: production  # Can be overridden per-cluster
-  
-# Apply common labels to all resources
-namespace: monitoring
-nameSuffix: -cluster1

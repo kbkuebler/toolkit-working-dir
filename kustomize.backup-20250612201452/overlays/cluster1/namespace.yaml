@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring-cluster1
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring-cluster1
+    app.kubernetes.io/part-of: monitoring-stack
+    app.kubernetes.io/managed-by: kustomize
+    cluster: cluster1
+    environment: production
