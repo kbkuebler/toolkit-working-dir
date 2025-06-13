@@ -27,6 +27,13 @@ if [ -d "/usr/local/bin" ]; then
     export PATH="/usr/local/bin:${PATH}"
 fi
 
+# Ensure ~/.local/bin exists and is in PATH
+LOCAL_BIN="$HOME/.local/bin"
+mkdir -p "$LOCAL_BIN"
+if ! echo "$PATH" | tr ':' '\n' | grep -qx "$LOCAL_BIN"; then
+    export PATH="$LOCAL_BIN:$PATH"
+fi
+
 # Default values
 DISCOVER_NODES=true
 CONFIG_ONLY=false
@@ -300,6 +307,20 @@ install_python_requirements() {
     fi
 
     return 0
+}
+
+# Install local toolkit scripts to ~/.local/bin
+install_tool_scripts() {
+    local dest_dir="$HOME/.local/bin"
+    mkdir -p "$dest_dir"
+
+    for script in "$SCRIPT_DIR"/scripts/*; do
+        [ -f "$script" ] || continue
+        case "$script" in
+            */__pycache__*) continue ;;
+        esac
+        install -m 755 "$script" "$dest_dir/$(basename "$script")"
+    done
 }
 
 # Check for required commands
@@ -606,6 +627,9 @@ main() {
         log_error "Failed to install required dependencies"
         exit 1
     fi
+
+    # Copy toolkit scripts to user's local bin for convenience
+    install_tool_scripts
 
     # Ensure k3s is installed and running
     if [ -x "scripts/setup_k3s.sh" ]; then
