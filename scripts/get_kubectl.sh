@@ -31,12 +31,13 @@ if command -v kubectl &> /dev/null; then
 fi
 
 # Determine the target directory
-TARGET_DIR="/usr/local/bin"
-# Use local bin if not running as root
-if [ "$(id -u)" -ne 0 ]; then
-    TARGET_DIR="${HOME}/.local/bin"
-    mkdir -p "${TARGET_DIR}"
+TARGET_DIR="${HOME}/.local/bin"
+mkdir -p "${TARGET_DIR}"
+
+# Add target directory to PATH if not already present
+if ! echo ":${PATH}:" | grep -q ":${TARGET_DIR}:"; then
     export PATH="${TARGET_DIR}:${PATH}"
+    log_info "Added ${TARGET_DIR} to PATH for this session"
 fi
 
 # Get the latest stable version
@@ -68,9 +69,13 @@ chmod +x "${TARGET_DIR}/kubectl"
 if command -v kubectl &> /dev/null; then
     log_info "kubectl installed successfully!"
     kubectl version --client --short
+    
+    # Update shell config if not in PATH
+    if ! echo ":${PATH}:" | grep -q ":${TARGET_DIR}:"; then
+        log_warn "${TARGET_DIR} is not in your PATH"
+        echo "Add the following to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export PATH=\"${TARGET_DIR}:\$PATH\""
+    fi
 else
-    log_warn "kubectl installation completed but could not be found in PATH"
-    echo "Please add ${TARGET_DIR} to your PATH"
-    echo "export PATH=\"${TARGET_DIR}:\${PATH}\"" >> ~/.bashrc
-    echo "export PATH=\"${TARGET_DIR}:\${PATH}\"" >> ~/.zshrc
+    log_error "kubectl installation failed"
 fi

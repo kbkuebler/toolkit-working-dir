@@ -31,12 +31,13 @@ if command -v k9s &> /dev/null; then
 fi
 
 # Determine the target directory
-TARGET_DIR="/usr/local/bin"
-# Use local bin if not running as root
-if [ "$(id -u)" -ne 0 ]; then
-    TARGET_DIR="${HOME}/.local/bin"
-    mkdir -p "${TARGET_DIR}"
+TARGET_DIR="${HOME}/.local/bin"
+mkdir -p "${TARGET_DIR}"
+
+# Add target directory to PATH if not already present
+if ! echo ":${PATH}:" | grep -q ":${TARGET_DIR}:"; then
     export PATH="${TARGET_DIR}:${PATH}"
+    log_info "Added ${TARGET_DIR} to PATH for this session"
 fi
 
 # Detect OS and architecture
@@ -79,9 +80,13 @@ rm -rf "${TEMP_DIR}"
 if command -v k9s &> /dev/null; then
     log_info "k9s installed successfully!"
     k9s version
+    
+    # Update shell config if not in PATH
+    if ! echo ":${PATH}:" | grep -q ":${TARGET_DIR}:"; then
+        log_warn "${TARGET_DIR} is not in your PATH"
+        echo "Add the following to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export PATH=\"${TARGET_DIR}:\$PATH\""
+    fi
 else
-    log_warn "k9s installation completed but could not be found in PATH"
-    echo "Please add ${TARGET_DIR} to your PATH"
-    echo "export PATH=\"${TARGET_DIR}:\${PATH}\"" >> ~/.bashrc
-    echo "export PATH=\"${TARGET_DIR}:\${PATH}\"" >> ~/.zshrc
+    log_error "k9s installation failed"
 fi
